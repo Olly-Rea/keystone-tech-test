@@ -1,2 +1,3 @@
 services/database/*
 services/cache/*
+.vscode
