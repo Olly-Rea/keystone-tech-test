@@ -13,6 +13,9 @@ class TagController extends Controller
      */
     public static function index(): array
     {
-        return Tag::whereIn('name', ["laravel", "vue", "vue.js", "php", "api"])->get()->toArray();
+        return Tag::whereIn('name', ['laravel', 'vue', 'vue.js', 'php', 'api'])
+            ->orderBy('name')
+            ->get()
+            ->toArray();
     }
 }

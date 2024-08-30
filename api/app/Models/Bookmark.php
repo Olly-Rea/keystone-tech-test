@@ -17,8 +17,9 @@ class Bookmark extends Model
      */
     protected $fillable = [
         'title',
+        'description',
         'url',
-        'description'
+        'url_status_code',
     ];
 
     /**
@@ -29,7 +30,7 @@ class Bookmark extends Model
     protected $hidden = [
         'id',
         'pivot',
-        'updated_at'
+        'updated_at',
     ];
 
     // Bookmark Model relationship

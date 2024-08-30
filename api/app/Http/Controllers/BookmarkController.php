@@ -11,7 +11,7 @@ use Illuminate\Http\Response;
 class BookmarkController extends Controller
 {
     /**
-     * Fetch links from "https://pinboard.in/u:alasdairw?per_page=120" and seed the DB
+     * Fetch links from "https://pinboard.in/u:alasdairw?per_page=120" and seed the DB.
      *
      * @return void
      */

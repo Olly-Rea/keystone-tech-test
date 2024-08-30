@@ -2,12 +2,10 @@
 
 namespace App\Http\Services\Bookmarks;
 
-use Cache;
-use DB;
 use Illuminate\Http\Response;
 
 /**
- * Service class for the BookmarkController::fetch() method
+ * Service class for the BookmarkController::fetch() method.
  *
  * @return array
  */
@@ -16,7 +14,7 @@ class BookmarkFetchService
     public function __invoke(): Response
     {
         // Get the page HTML from the URL
-        $bookmarks = Cache::remember(
+        $bookmarks = \Cache::remember(
             key: 'bookmarks',
             ttl: 60, // Cache for 1 minute
             callback: function () {
@@ -42,11 +40,11 @@ class BookmarkFetchService
                     $validTags = false;
                     $details = [];
                     foreach ($bookmark->childNodes as $child) {
-                        if(get_class($child) === "DOMElement") {
+                        if (\get_class($child) === 'DOMElement') {
                             if ($child->className === 'bookmark_title') {
                                 $details['title'] = $child->nodeValue;
                                 foreach ($child->attributes as $attribute) {
-                                    if($attribute->nodeName === 'href') {
+                                    if ($attribute->nodeName === 'href') {
                                         $details['url'] = $attribute->nodeValue;
                                         break;
                                     }
@@ -57,16 +55,16 @@ class BookmarkFetchService
                             }
                             if ($child->className === 'tag') {
                                 // Check to see if the bookmark contains the appropriate tags
-                                if (in_array($child->nodeValue, ["laravel", "vue", "vue.js", "php", "api"])) {
+                                if (\in_array($child->nodeValue, ['laravel', 'vue', 'vue.js', 'php', 'api'])) {
                                     $validTags = true;
                                 }
                                 $details['tags'][] = $child->nodeValue;
                             }
                             if ($child->className === 'when') {
                                 foreach ($child->attributes as $attribute) {
-                                    if($attribute->nodeName === 'title') {
+                                    if ($attribute->nodeName === 'title') {
                                         $when = preg_replace('/\s+/', '', $attribute->nodeValue);
-                                        $details['created_at'] = \DateTime::createFromFormat("Y.m.d H:i:s", $when);
+                                        $details['created_at'] = \DateTime::createFromFormat('Y.m.d H:i:s', $when);
                                         break;
                                     }
                                 }
@@ -78,6 +76,26 @@ class BookmarkFetchService
                         $bookmarks[] = $details;
                     }
                 }
+
+                // Concurrently check if the URLs are valid
+                $multiCURL = curl_multi_init();
+                $requests = [];
+                foreach ($bookmarks as $index => $bookmark) {
+                    $requests[$index] = curl_init($bookmark['url']);
+                    curl_setopt($requests[$index], CURLOPT_NOBODY, true);
+                    curl_multi_add_handle($multiCURL, $requests[$index]);
+                }
+                do {
+                    curl_multi_exec($multiCURL, $active);
+                } while ($active);
+                // dd($requests);
+                foreach ($requests as $index => $request) {
+                    $bookmarks[$index]['url_status_code'] = curl_getinfo($request, CURLINFO_HTTP_CODE);
+                    curl_multi_remove_handle($multiCURL, $request);
+                    curl_close($request);
+                }
+
+                // Return the $bookmarks array
                 return $bookmarks;
             }
         );
@@ -92,10 +110,10 @@ class BookmarkFetchService
         $bookmarkTagMap = [];
         // Map the tags to the tag id
         array_walk($bookmarks, function (&$bookmark) use ($tags, &$bookmarkTagMap) {
-            foreach($bookmark['tags'] as &$tag) {
+            foreach ($bookmark['tags'] as &$tag) {
                 $bookmarkTagMap[] = [
                     'bookmark_id' => $bookmark['id'],
-                    'tag_id' => array_search($tag, $tags) + 1
+                    'tag_id' => array_search($tag, $tags) + 1,
                 ];
             }
             unset($bookmark['tags']);
@@ -108,15 +126,15 @@ class BookmarkFetchService
         );
 
         // Clear tables for re-seeding
-        DB::table('bookmark_tags')->delete();
-        DB::table('bookmarks')->delete();
-        DB::table('tags')->delete();
+        \DB::table('bookmark_tags')->delete();
+        \DB::table('bookmarks')->delete();
+        \DB::table('tags')->delete();
         // Start a DB transaction
-        DB::transaction(function () use ($tags, $bookmarks, $bookmarkTagMap): void {
+        \DB::transaction(function () use ($tags, $bookmarks, $bookmarkTagMap): void {
             // Bulk insert all data - adding pivot table data last (FK constraints)
-            DB::table('tags')->insert($tags);
-            DB::table('bookmarks')->insert($bookmarks);
-            DB::table('bookmark_tags')->insert($bookmarkTagMap);
+            \DB::table('tags')->insert($tags);
+            \DB::table('bookmarks')->insert($bookmarks);
+            \DB::table('bookmark_tags')->insert($bookmarkTagMap);
         });
 
         // return a "201 Created" response

@@ -16,7 +16,7 @@ class Tag extends Model
      * @var array<string>
      */
     protected $fillable = [
-        'name'
+        'name',
     ];
 
     /**
@@ -25,7 +25,7 @@ class Tag extends Model
      * @var array
      */
     protected $hidden = [
-        'pivot'
+        'pivot',
     ];
 
     // Bookmark Model relationship
