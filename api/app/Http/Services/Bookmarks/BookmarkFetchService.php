@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Http\Services\Links;
+namespace App\Http\Services\Bookmarks;
 
 use Cache;
 use DB;
 use Illuminate\Http\Response;
 
 /**
- * Service class for the LinkController::fetch() method
+ * Service class for the BookmarkController::fetch() method
  *
  * @return array
  */
-class LinkFetchService
+class BookmarkFetchService
 {
     public function __invoke(): Response
     {

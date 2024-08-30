@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tag;
-use Illuminate\Http\Request;
 
 class TagController extends Controller
 {
@@ -12,8 +11,8 @@ class TagController extends Controller
      *
      * @return void
      */
-    public static function show(): array
+    public static function index(): array
     {
-        return Tag::all()->toArray();
+        return Tag::whereIn('name', ["laravel", "vue", "vue.js", "php", "api"])->get()->toArray();
     }
 }

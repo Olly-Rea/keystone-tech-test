@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\LinkController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/links', [LinkController::class, 'index']);
-Route::get('/links/fetch', [LinkController::class, 'fetch']);
-Route::get('/links/tag/{tag}', [LinkController::class, 'byTag']);
-Route::get('/tags/get', [TagController::class, 'show']);
+Route::get('/bookmarks', [BookmarkController::class, 'index']);
+Route::get('/bookmarks/fetch', [BookmarkController::class, 'fetch']);
+Route::get('/bookmarks/tag/{tag}', [BookmarkController::class, 'byTag']);
+Route::get('/tags', [TagController::class, 'index']);
