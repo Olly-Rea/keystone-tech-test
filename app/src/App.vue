@@ -13,13 +13,15 @@ const bookmarks: Ref<Bookmark[]> = ref<Bookmark[]>([]);
 const tags: Ref<Tag[]> = ref<Tag[]>([]);
 
 // Check that we have data from the endpoints
-const checkData = () => {
-  if (bookmarks.value.length && tags.value.length) {
-    hasData.value = true;
-  }
+const checkData = async () => {
+  const bookmarkCount = await axios.get('bookmarks/count')
+    .then((response) => response.data)
+    .catch(() => 0);
+  hasData.value = bookmarkCount !== 0;  
 };
 
-const fetchData = async () => {
+// Method to fetch all bookmark data from the backend
+const fetchBoomarks = async () => {
   await axios.get('bookmarks')
     .then((response: AxiosResponse) => {
       bookmarks.value = [...response.data.map((bookmark: BookmarkResponse) => {
@@ -37,6 +39,12 @@ const fetchData = async () => {
     .catch((error) => {
       console.log(error);
     });
+  // Unset the "active tag"
+  activeTag.value = null;
+};
+
+// Method to fetch all tag data from the backend
+const fetchTags = async () => {
   await axios.get('tags')
     .then((response: AxiosResponse) => {
       tags.value = [...response.data];
@@ -44,23 +52,10 @@ const fetchData = async () => {
     .catch((error) => {
       console.log(error);
     });
-  // Unset the "active tag"
-  activeTag.value = null;
 };
 
-const seedDatabase = async () => {
-  await axios.get('/bookmarks/fetch')
-    .then(async () => {
-      await fetchData();
-      checkData();
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-};
-
+// Method to fetch all bookmarks belonging to a tag from the backend
 const fetchBookmarkByTag = async (tagId: number) => {
-  activeTag.value = tagId;
   await axios.get(`bookmarks/tag/${tagId}`)
     .then((response: AxiosResponse) => {
       bookmarks.value = [...response.data.map((bookmark: BookmarkResponse) => {
@@ -75,16 +70,34 @@ const fetchBookmarkByTag = async (tagId: number) => {
         };
       })];
       // Set the "active tag"
+      activeTag.value = tagId;
     })
     .catch((error) => {
       console.log(error);
     });
 };
 
+// Method to crawl the specified webpage, gather data from it, and seed to DB
+const seedDatabase = async (attempts: number) => {
+  const fetch = async () => {
+    fetchBoomarks();
+    await fetchTags();
+    checkData();
+  };
+  if (attempts <= 3) {
+    await axios.get('/bookmarks/fetch')
+      .then(async () => await fetch())
+      .catch(async () => await seedDatabase(attempts++));
+  }
+};
+
 // Call the onMounted lifecycle hook
 onMounted(async () => {
-  await fetchData();
-  checkData();
+  await checkData();
+  if (hasData.value) {
+    fetchBoomarks();
+    await fetchTags();
+  }
 });
 </script>
 
@@ -98,7 +111,7 @@ onMounted(async () => {
     </h1>
     <button
       class="py-2 px-4 bg-slate-300 hover:bg-slate-400 rounded cursor-pointer"
-      @click="seedDatabase()"
+      @click="seedDatabase(1)"
     >
       Fetch Data!
     </button>
@@ -117,7 +130,7 @@ onMounted(async () => {
         :tag="tag"
         class="cursor-pointer shadow-sm"
         :class="tag.id === activeTag ? 'bg-slate-500 hover:bg-slate-600' : 'hover:bg-slate-400 '"
-        @click="tag.id === activeTag ? fetchData() : fetchBookmarkByTag(tag.id)"
+        @click="tag.id === activeTag ? fetchBoomarks() : fetchBookmarkByTag(tag.id)"
       />
     </div>
     <div
