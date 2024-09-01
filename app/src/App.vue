@@ -99,7 +99,7 @@ const seedDatabase = async (attempts: number) => {
   if (attempts <= 3) {
     await axios.get('/bookmarks/fetch')
       .then(async () => await fetch())
-      .catch(async () => await seedDatabase(attempts++));
+      .catch(async () => await seedDatabase(attempts+=1));
   }
 };
 
