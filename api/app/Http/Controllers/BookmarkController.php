@@ -21,13 +21,27 @@ class BookmarkController extends Controller
     }
 
     /**
+     * Return the number of bookmarks in the DB.
+     *
+     * @return int
+     */
+    public static function count(): int
+    {
+        return Bookmark::count();
+    }
+
+    /**
      * Retrieves all stored links from the database (caching response).
      *
      * @return void
      */
     public static function index(): Collection
     {
-        return Bookmark::with('tags:name')->get();
+        return \Cache::remember(
+            key: 'bookmarksIndex',
+            ttl: 60, // Cache for 1 minute
+            callback: fn () => Bookmark::with('tags:name')->get()
+        );
     }
 
     /**
@@ -37,6 +51,10 @@ class BookmarkController extends Controller
      */
     public static function byTag(Tag $tag): Collection
     {
-        return $tag->bookmarks()->with('tags:name')->get();
+        return \Cache::remember(
+            key: "bookmarksByTag-$tag",
+            ttl: 60, // Cache for 1 minute
+            callback: fn () => $tag->bookmarks()->with('tags:name')->get()
+        );
     }
 }

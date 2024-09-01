@@ -15,7 +15,7 @@ class BookmarkFetchService
     {
         // Get the page HTML from the URL
         $bookmarks = \Cache::remember(
-            key: 'bookmarks',
+            key: 'bookmarksFetch',
             ttl: 60, // Cache for 1 minute
             callback: function () {
                 $pageData = file_get_contents('https://pinboard.in/u:alasdairw?per_page=120');
