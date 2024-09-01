@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Bookmarks\BookmarkByTagRequest;
 use App\Http\Services\Bookmarks\BookmarkFetchService;
 use App\Models\Bookmark;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
-use Illuminate\Http\Request;
 
 class BookmarkController extends Controller
 {
@@ -49,10 +49,10 @@ class BookmarkController extends Controller
      *
      * @return void
      */
-    public static function byTags(Request $request): Collection
+    public static function byTags(BookmarkByTagRequest $request): Collection
     {
         // Get the tags from the POST request (and sort numerically)
-        $tags = $request->post('tags', []);
+        $tags = $request->validated('tags', []);
         sort($tags, SORT_NUMERIC);
         // Create the query
         $bookmarkQuery = Bookmark::with('tags:name');
