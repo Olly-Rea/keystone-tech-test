@@ -1,5 +1,5 @@
 # Dockerfile for creating a vue3 app with vite
-FROM oven/bun:1.1.26-alpine AS build
+FROM oven/bun:1.1.26-alpine
 # Create working directory
 WORKDIR /srv/public/
 # Copy the source code
@@ -8,11 +8,5 @@ COPY . .
 RUN bun install
 # Expose port
 EXPOSE 80
-
-# Run dev
-FROM build AS development
-CMD bun run dev
-
-# Run prod
-FROM build AS production
+# Run build and preview
 CMD bun run build && bun run preview
