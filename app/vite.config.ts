@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import __dirname from 'path';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
