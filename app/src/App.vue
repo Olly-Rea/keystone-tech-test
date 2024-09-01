@@ -8,7 +8,7 @@ import TagElement from '@/components/TagElement.vue';
 
 // State data
 const hasData: Ref<boolean> = ref<boolean>(false);
-const activeTag: Ref<number|null> = ref<number|null>(null);
+const activeTags: Ref<number[]> = ref<number[]>([]);
 const bookmarks: Ref<Bookmark[]> = ref<Bookmark[]>([]);
 const tags: Ref<Tag[]> = ref<Tag[]>([]);
 
@@ -39,8 +39,6 @@ const fetchBoomarks = async () => {
     .catch((error) => {
       console.log(error);
     });
-  // Unset the "active tag"
-  activeTag.value = null;
 };
 
 // Method to fetch all tag data from the backend
@@ -56,25 +54,39 @@ const fetchTags = async () => {
 
 // Method to fetch all bookmarks belonging to a tag from the backend
 const fetchBookmarkByTag = async (tagId: number) => {
-  await axios.get(`bookmarks/tag/${tagId}`)
-    .then((response: AxiosResponse) => {
-      bookmarks.value = [...response.data.map((bookmark: BookmarkResponse) => {
-        return {
-          id: bookmark.id,
-          title: bookmark.title,
-          description: bookmark.description,
-          createdAt: new Date(bookmark.created_at),
-          url: bookmark.url,
-          urlStatusCode: bookmark.url_status_code,
-          tags: bookmark.tags,
-        };
-      })];
-      // Set the "active tag"
-      activeTag.value = tagId;
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+  // Check if the tagId already exists in activeTags
+  if (activeTags.value.includes(tagId)) {
+    // Pop the "active tag"
+    const index = activeTags.value.indexOf(tagId);
+    if (index !== -1) {
+      activeTags.value.splice(index, 1);
+    }
+    
+  } else {
+    activeTags.value.push(tagId);
+  }
+  if (activeTags.value.length) {
+    // Fetch the bookmarks that have the specififed tags
+    await axios.post(`bookmarks/bytags`, { tags: activeTags.value })
+      .then((response: AxiosResponse) => {
+        bookmarks.value = [...response.data.map((bookmark: BookmarkResponse) => {
+          return {
+            id: bookmark.id,
+            title: bookmark.title,
+            description: bookmark.description,
+            createdAt: new Date(bookmark.created_at),
+            url: bookmark.url,
+            urlStatusCode: bookmark.url_status_code,
+            tags: bookmark.tags,
+          };
+        })];
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  } else {
+    fetchBoomarks();
+  }
 };
 
 // Method to crawl the specified webpage, gather data from it, and seed to DB
@@ -129,19 +141,30 @@ onMounted(async () => {
         :key="tag.id"
         :tag="tag"
         class="cursor-pointer shadow-sm"
-        :class="tag.id === activeTag ? 'bg-slate-500 hover:bg-slate-600' : 'hover:bg-slate-400 '"
-        @click="tag.id === activeTag ? fetchBoomarks() : fetchBookmarkByTag(tag.id)"
+        :class="activeTags.includes(tag.id) ? 
+          'bg-slate-500 hover:bg-slate-600' : 
+          'hover:bg-slate-400'
+        "
+        @click="fetchBookmarkByTag(tag.id)"
       />
     </div>
     <div
       id="bookmark-container"
       class="flex flex-col justify-center p-4 gap-4 w-2/3"
     >
-      <BookmarkElement
-        v-for="bookmark in bookmarks"
-        :key="bookmark.id"
-        :bookmark="bookmark"
-      />
+      <template v-if="bookmarks.length">
+        <BookmarkElement
+          v-for="bookmark in bookmarks"
+          :key="bookmark.id"
+          :bookmark="bookmark"
+        />
+      </template>
+      <p
+        v-else
+        class="w-full text-center"
+      >
+        No data!
+      </p>
     </div>
   </main>
 </template>

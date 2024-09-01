@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Services\Bookmarks\BookmarkFetchService;
 use App\Models\Bookmark;
-use App\Models\Tag;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
+use Illuminate\Http\Request;
 
 class BookmarkController extends Controller
 {
@@ -49,12 +49,23 @@ class BookmarkController extends Controller
      *
      * @return void
      */
-    public static function byTag(Tag $tag): Collection
+    public static function byTags(Request $request): Collection
     {
+        // Get the tags from the POST request (and sort numerically)
+        $tags = $request->post('tags', []);
+        sort($tags, SORT_NUMERIC);
+        // Create the query
+        $bookmarkQuery = Bookmark::with('tags:name');
+        foreach ($tags as $tag) {
+            $bookmarkQuery->whereHas('tags', function ($query) use (&$tag) {
+                $query->where('id', $tag);
+            });
+        }
+        // Return the output
         return \Cache::remember(
-            key: "bookmarksByTag-$tag",
+            key: 'bookmarksByTag-' . join($tags),
             ttl: 60, // Cache for 1 minute
-            callback: fn () => $tag->bookmarks()->with('tags:name')->get()
+            callback: fn () => $bookmarkQuery->get()
         );
     }
 }
